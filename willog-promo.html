@@ -1,0 +1,342 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Willog Data Story</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;700;800&family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#06101F; --line:rgba(140,190,255,.10);
+  --cyan:#22D3EE; --blue:#3B82F6; --mint:#34D399; --red:#F43F5E; --amber:#FBBF24;
+  --text:#EAF2FF; --muted:#8FA6C6; --dim:#4A5F80;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:100%;height:100%;background:#000;overflow:hidden;font-family:'Noto Sans KR',sans-serif;color:var(--text)}
+#stage{position:absolute;width:1920px;height:1080px;left:50%;top:50%;transform-origin:center;overflow:hidden;
+  background:radial-gradient(1200px 800px at 15% 0%, #0E2A52 0%, transparent 60%),
+             radial-gradient(1000px 700px at 95% 100%, #0A3346 0%, transparent 60%), var(--bg)}
+.grid{position:absolute;inset:-100px;background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);
+  background-size:80px 80px;mask-image:radial-gradient(ellipse at center,#000 30%,transparent 75%);animation:gridMove 30s linear both}
+@keyframes gridMove{to{transform:translate(80px,80px)}}
+
+/* scene system: every animation is driven by a master clock (seconds) */
+.scene{position:absolute;inset:0;opacity:0;
+  animation-name:sIn,sOut;animation-duration:.5s,.5s;
+  animation-delay:calc(var(--s)*1s),calc(var(--e)*1s - .5s);animation-fill-mode:both,forwards}
+.scene.last{animation-name:sIn;animation-duration:.6s;animation-delay:calc(var(--s)*1s);animation-fill-mode:both}
+@keyframes sIn{from{opacity:0}to{opacity:1}}
+@keyframes sOut{from{opacity:1}to{opacity:0}}
+.fu{animation:fadeUp .9s cubic-bezier(.2,.8,.2,1) calc(var(--d)*1s) both}
+@keyframes fadeUp{from{opacity:0;transform:translateY(40px)}to{opacity:1;transform:none}}
+.fi{animation:fadeIn .7s ease calc(var(--d)*1s) both}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.pop{animation:pop .7s cubic-bezier(.3,1.5,.5,1) calc(var(--d)*1s) both}
+@keyframes pop{from{opacity:0;transform:scale(.4)}to{opacity:1;transform:scale(1)}}
+.draw{stroke-dasharray:1;stroke-dashoffset:1;animation:draw calc(var(--dur)*1s) linear calc(var(--d)*1s) both}
+@keyframes draw{to{stroke-dashoffset:0}}
+
+/* typography */
+.eyebrow{font-family:Montserrat;font-weight:700;font-size:24px;letter-spacing:6px;color:var(--cyan)}
+.h1{font-size:84px;font-weight:900;letter-spacing:-2px;line-height:1.2}
+.h2{font-size:56px;font-weight:700;letter-spacing:-1px;line-height:1.3}
+.cap{font-size:38px;font-weight:700;line-height:1.45;letter-spacing:-.5px}
+.cap em{font-style:normal;color:var(--muted);font-weight:500}
+.src{font-size:20px;color:var(--dim)}
+.num{font-family:Montserrat;font-weight:800;letter-spacing:-6px;line-height:1}
+.grad{background:linear-gradient(90deg,var(--cyan),var(--blue));-webkit-background-clip:text;background-clip:text;color:transparent}
+.red{color:var(--red)}
+.abs{position:absolute}
+
+/* chapter index (top-left) */
+.chapter{position:absolute;left:110px;top:90px;display:flex;align-items:center;gap:20px}
+.chapter b{font-family:Montserrat;font-weight:800;font-size:22px;color:var(--bg);background:var(--cyan);padding:6px 14px;border-radius:8px}
+.chapter span{font-size:24px;color:var(--muted);font-weight:500}
+
+/* S1 unit chart */
+.units{position:absolute;left:1080px;top:300px;display:grid;grid-template-columns:repeat(7,86px);gap:16px}
+.unit{width:86px;height:86px;border-radius:14px;background:rgba(244,63,94,.85);box-shadow:0 0 24px rgba(244,63,94,.35)}
+.unitLegend{position:absolute;left:1080px;top:830px;display:flex;align-items:center;gap:14px;font-size:22px;color:var(--muted)}
+.unitLegend i{width:24px;height:24px;border-radius:6px;background:var(--red)}
+
+/* S2 donut */
+.donut{position:absolute;left:1060px;top:230px;width:620px;height:620px}
+.donutLabel{position:absolute;left:1060px;top:230px;width:620px;height:620px;display:flex;flex-direction:column;align-items:center;justify-content:center}
+
+/* S3 waffle */
+.waffle{position:absolute;left:1060px;top:230px;display:grid;grid-template-columns:repeat(10,52px);gap:10px}
+.cell{width:52px;height:52px;border-radius:10px;background:rgba(140,190,255,.14);animation:cellIn .4s ease calc(var(--d)*1s) both}
+.cell.bad{animation:cellIn .4s ease calc(var(--d)*1s) both, cellRed .35s ease calc(var(--r)*1s) both}
+@keyframes cellIn{from{opacity:0;transform:scale(.3)}to{opacity:1;transform:none}}
+@keyframes cellRed{to{background:var(--red);box-shadow:0 0 16px rgba(244,63,94,.5)}}
+
+/* S4/S5 chart */
+.chart{position:absolute;left:210px;top:330px}
+.axisLbl{font-family:Montserrat;font-size:20px;font-weight:700}
+.gapBox{animation:gapPulse 1.2s ease-in-out infinite}
+@keyframes gapPulse{50%{opacity:.55}}
+.callout{position:absolute;padding:18px 26px;border-radius:18px;font-size:26px;font-weight:700;white-space:nowrap}
+.callout span{display:block;font-size:20px;font-weight:500;color:var(--muted);margin-top:4px}
+.ring{position:absolute;width:40px;height:40px;margin:-20px 0 0 -20px;border-radius:50%;border:4px solid var(--red);animation:ring 1.2s ease-out calc(var(--d)*1s) 3 both}
+@keyframes ring{from{transform:scale(1);opacity:.9}to{transform:scale(5);opacity:0}}
+.pills{position:absolute;left:210px;top:880px;display:flex;gap:18px}
+.pill{padding:14px 28px;border-radius:999px;font-size:26px;font-weight:700;background:rgba(34,211,238,.12);border:1.5px solid rgba(34,211,238,.55)}
+
+/* S6 */
+.center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+.logo{display:flex;align-items:center;gap:36px}
+.mark{width:170px;height:170px}
+.word{font-family:Montserrat;font-weight:800;font-size:170px;letter-spacing:-4px;line-height:1}
+.tag{font-size:48px;font-weight:700;margin-top:56px;letter-spacing:-1px}
+.url{font-family:Montserrat;font-weight:700;font-size:32px;color:var(--cyan);margin-top:28px;letter-spacing:2px}
+.recap{display:flex;gap:60px;margin-bottom:80px}
+.recap div{font-family:Montserrat;font-weight:800;font-size:44px;color:var(--dim);text-decoration:line-through;text-decoration-color:rgba(244,63,94,.7)}
+
+/* controls */
+#ui{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);display:flex;align-items:center;gap:14px;padding:10px 18px;border-radius:999px;
+  background:rgba(10,20,40,.85);border:1px solid rgba(255,255,255,.15);font-size:14px;color:#cfe0ff;transition:opacity .4s;z-index:10}
+#ui button{background:none;border:0;color:#fff;font-size:16px;cursor:pointer;width:32px;height:32px;border-radius:50%}
+#ui button:hover{background:rgba(255,255,255,.12)}
+#seek{width:360px;accent-color:var(--cyan)}
+#ui.hide{opacity:0;pointer-events:none}
+#time{font-variant-numeric:tabular-nums;min-width:90px;text-align:right}
+.hint{opacity:.6;font-size:12px}
+</style>
+</head>
+<body>
+<div id="stage">
+  <div class="grid"></div>
+
+  <!-- ===== S1 : 0 ~ 6.2s  $35B ===== -->
+  <section class="scene" style="--s:0;--e:6.2">
+    <div class="chapter fi" style="--d:.2"><b>01</b><span>숫자로 보는 콜드체인</span></div>
+    <div class="abs" style="left:110px;top:300px">
+      <div class="eyebrow fi" style="--d:.4">EVERY YEAR</div>
+      <div class="num red fu" style="--d:.6;font-size:260px;margin-top:20px" id="n1">$0B</div>
+      <div class="cap fu" style="--d:1.6;margin-top:40px">온도 관리 실패로<br>매년 사라지는 <span class="red">바이오 의약품의 가치</span></div>
+      <div class="src fi" style="--d:2.4;margin-top:36px">출처: IQVIA Institute, 2020</div>
+    </div>
+    <div class="units" id="units"></div>
+    <div class="unitLegend fi" style="--d:1.2"><i></i>1칸 = 10억 달러</div>
+  </section>
+
+  <!-- ===== S2 : 6 ~ 11.2s  14% food ===== -->
+  <section class="scene" style="--s:6;--e:11.2">
+    <div class="chapter fi" style="--d:6.2"><b>02</b><span>식품</span></div>
+    <div class="abs" style="left:110px;top:330px">
+      <div class="eyebrow fi" style="--d:6.4">FOOD LOSS</div>
+      <div class="cap fu" style="--d:6.6;margin-top:30px">전 세계 식량의 <span class="red">14%</span>가<br>수확 후 소매 단계에 닿기 전<br>사라집니다</div>
+      <div class="src fi" style="--d:7.6;margin-top:36px">출처: FAO, The State of Food and Agriculture 2019</div>
+    </div>
+    <svg class="donut fi" style="--d:6.4" viewBox="0 0 620 620">
+      <circle cx="310" cy="310" r="240" fill="none" stroke="rgba(140,190,255,.14)" stroke-width="70"/>
+      <circle id="donutArc" cx="310" cy="310" r="240" fill="none" stroke="#F43F5E" stroke-width="70" pathLength="100"
+        stroke-dasharray="0 100" transform="rotate(-90 310 310)" stroke-linecap="butt"/>
+    </svg>
+    <div class="donutLabel">
+      <div class="num" style="font-size:170px" id="n2">0%</div>
+      <div style="font-size:26px;color:var(--muted);margin-top:14px">유통 전 손실</div>
+    </div>
+  </section>
+
+  <!-- ===== S3 : 11 ~ 16.2s  50% vaccines ===== -->
+  <section class="scene" style="--s:11;--e:16.2">
+    <div class="chapter fi" style="--d:11.2"><b>03</b><span>백신</span></div>
+    <div class="abs" style="left:110px;top:300px">
+      <div class="eyebrow fi" style="--d:11.4">VACCINE WASTAGE</div>
+      <div class="num red fu" style="--d:11.6;font-size:220px;margin-top:20px" id="n3">0%</div>
+      <div class="cap fu" style="--d:12.4;margin-top:36px">전 세계적으로 최대 절반의 백신이<br>폐기될 수 있습니다 <em>— 온도·물류 문제 등</em></div>
+      <div class="src fi" style="--d:13;margin-top:36px">출처: WHO, Monitoring vaccine wastage at country level</div>
+    </div>
+    <div class="waffle" id="waffle"></div>
+  </section>
+
+  <!-- ===== S4 : 16 ~ 21.2s  Blind spot ===== -->
+  <section class="scene" style="--s:16;--e:21.2">
+    <div class="chapter fi" style="--d:16.2"><b>04</b><span>원인</span></div>
+    <div class="abs" style="left:110px;top:160px">
+      <div class="h2 fu" style="--d:16.3">문제는, <span class="red">보이지 않는 구간</span>입니다</div>
+    </div>
+    <svg class="chart" width="1500" height="480" id="chartA"></svg>
+    <div class="callout fi" style="--d:18.2;left:1140px;top:380px;background:rgba(251,191,36,.12);border:1.5px solid rgba(251,191,36,.6)">
+      데이터 공백<span>환적 · 보관 · 이동 중 기록 없음</span></div>
+    <div class="cap fu" style="--d:19.3;position:absolute;left:210px;top:880px">언제, 어디서 문제가 생겼는지 <span class="red">아무도 모릅니다</span></div>
+  </section>
+
+  <!-- ===== S5 : 21 ~ 26.2s  Willog fills the gap ===== -->
+  <section class="scene" style="--s:21;--e:26.2">
+    <div class="chapter fi" style="--d:21.2"><b>05</b><span>해결</span></div>
+    <div class="abs" style="left:110px;top:160px">
+      <div class="h2 fu" style="--d:21.3"><span class="grad">Willog</span>가 그 공백을 데이터로 채웁니다</div>
+    </div>
+    <svg class="chart" width="1500" height="480" id="chartB"></svg>
+    <div class="ring" style="--d:23.2;left:950px;top:492px"></div>
+    <div class="callout pop" style="--d:23.3;left:1010px;top:360px;background:rgba(244,63,94,.14);border:1.5px solid rgba(244,63,94,.7)">
+      8.0°C 이탈 감지 → 즉시 알림<span>문제가 커지기 전에 대응</span></div>
+    <div class="pills">
+      <div class="pill fu" style="--d:24">실시간 온도</div>
+      <div class="pill fu" style="--d:24.2">위치 추적</div>
+      <div class="pill fu" style="--d:24.4">충격 감지</div>
+      <div class="pill fu" style="--d:24.6">끊김 없는 기록</div>
+    </div>
+  </section>
+
+  <!-- ===== S6 : 26 ~ 30s  Logo ===== -->
+  <section class="scene last" style="--s:26">
+    <div class="center">
+      <div class="recap">
+        <div class="fi" style="--d:26.1">$35B</div>
+        <div class="fi" style="--d:26.25">14%</div>
+        <div class="fi" style="--d:26.4">50%</div>
+      </div>
+      <div class="logo pop" style="--d:26.8">
+        <svg class="mark" viewBox="0 0 100 100">
+          <defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#22D3EE"/><stop offset="1" stop-color="#3B82F6"/></linearGradient></defs>
+          <rect x="4" y="4" width="92" height="92" rx="26" fill="url(#lg)"/>
+          <path class="draw" style="--d:27.1;--dur:1" pathLength="1" d="M18 38 L32 70 L44 44 L56 70 L68 38 L76 52 L84 52" fill="none" stroke="#fff" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <div class="word">willog</div>
+      </div>
+      <div class="tag fu" style="--d:27.7">물류의 모든 순간을 <span class="grad">데이터로</span></div>
+      <div class="url fi" style="--d:28.3">willog.io</div>
+    </div>
+  </section>
+</div>
+
+<div id="ui">
+  <button id="play" title="재생/일시정지 (Space)">❚❚</button>
+  <button id="restart" title="처음부터 (R)">↺</button>
+  <input id="seek" type="range" min="0" max="30" step="0.01" value="0">
+  <span id="time">0.0 / 30.0s</span>
+  <span class="hint">H: 컨트롤 숨기기</span>
+</div>
+
+<script>
+const DURATION = 30;
+const NS = 'http://www.w3.org/2000/svg';
+const $ = id => document.getElementById(id);
+const stage = $('stage');
+
+/* ---------- build data visuals ---------- */
+// S1: 35 units, filled in sync with the counter
+const units = $('units');
+for (let i = 0; i < 35; i++) {
+  const u = document.createElement('div');
+  u.className = 'unit pop';
+  u.style.setProperty('--d', (0.8 + i * 0.07).toFixed(2));
+  units.appendChild(u);
+}
+// S3: 10x10 waffle, 50 cells turn red
+const waffle = $('waffle');
+for (let i = 0; i < 100; i++) {
+  const c = document.createElement('div');
+  const bad = i < 50;
+  c.className = 'cell' + (bad ? ' bad' : '');
+  c.style.setProperty('--d', (11.3 + i * 0.008).toFixed(3));
+  if (bad) c.style.setProperty('--r', (12.0 + i * 0.04).toFixed(2));
+  waffle.appendChild(c);
+}
+
+// temperature chart helpers (0~12°C mapped to y)
+const Y = T => 420 - T * 30;
+function el(tag, attrs, parent) {
+  const e = document.createElementNS(NS, tag);
+  for (const k in attrs) e.setAttribute(k, attrs[k]);
+  parent.appendChild(e); return e;
+}
+function pathOf(pts) { return pts.map((p, i) => (i ? 'L' : 'M') + p[0] + ' ' + Y(p[1])).join(' '); }
+function axes(svg) {
+  el('rect', {x: 40, y: Y(8), width: 1420, height: Y(2) - Y(8), fill: 'rgba(52,211,153,.06)'}, svg);
+  el('line', {x1: 40, x2: 1460, y1: Y(8), y2: Y(8), stroke: 'rgba(244,63,94,.6)', 'stroke-dasharray': '8 8', 'stroke-width': 2}, svg);
+  el('line', {x1: 40, x2: 1460, y1: Y(2), y2: Y(2), stroke: 'rgba(59,130,246,.6)', 'stroke-dasharray': '8 8', 'stroke-width': 2}, svg);
+  el('text', {x: 0, y: Y(8) + 7, fill: '#F43F5E', class: 'axisLbl'}, svg).textContent = '8°';
+  el('text', {x: 0, y: Y(2) + 7, fill: '#3B82F6', class: 'axisLbl'}, svg).textContent = '2°';
+  ['출발', '환적', '보관', '배송', '도착'].forEach((s, i) => {
+    const t = el('text', {x: 40 + i * 355, y: 470, fill: '#8FA6C6', 'font-size': 22, 'text-anchor': i === 0 ? 'start' : (i === 4 ? 'end' : 'middle')}, svg);
+    t.textContent = s;
+  });
+}
+function line(svg, pts, color, d, dur, w = 5) {
+  const p = el('path', {d: pathOf(pts), fill: 'none', stroke: color, 'stroke-width': w, 'stroke-linecap': 'round', 'stroke-linejoin': 'round', pathLength: 1, class: 'draw'}, svg);
+  p.style.setProperty('--d', d); p.style.setProperty('--dur', dur);
+  return p;
+}
+// real journey (what actually happened)
+const full = [[40,4.2],[120,4.6],[200,4.1],[280,4.8],[360,4.3],[440,4.9],[520,4.5],[560,5.0],[600,5.8],[650,6.9],[700,8.0],[740,8.6],[780,8.2],[830,6.8],[880,5.4],[930,4.7],[1010,4.3],[1090,4.8],[1170,4.2],[1250,4.6],[1330,4.1],[1410,4.5],[1460,4.3]];
+
+// S4: data with a blind gap
+const A = $('chartA'); axes(A);
+const gap = el('rect', {x: 560, y: 20, width: 340, height: 420, rx: 16, fill: 'rgba(251,191,36,.08)', stroke: 'rgba(251,191,36,.5)', 'stroke-dasharray': '10 8', 'stroke-width': 2, class: 'gapBox'}, A);
+const q = el('text', {x: 730, y: 200, fill: '#FBBF24', 'font-size': 120, 'font-weight': 800, 'text-anchor': 'middle', 'font-family': 'Montserrat', class: 'fi'}, A);
+q.textContent = '?'; q.style.setProperty('--d', 18);
+line(A, full.slice(0, 8), '#8FA6C6', 16.6, 1.2);
+line(A, [[900,6.6],[980,6.9],[1060,6.5],[1140,7.0],[1220,6.7],[1300,7.1],[1380,6.8],[1460,7.0]], '#8FA6C6', 18.6, 1.0);
+
+// S5: continuous Willog data
+const B = $('chartB'); axes(B);
+line(B, full, '#34D399', 21.6, 2.2);
+full.forEach((p, i) => {
+  const c = el('circle', {cx: p[0], cy: Y(p[1]), r: 7, fill: p[1] >= 8 ? '#F43F5E' : '#34D399', class: 'pop'}, B);
+  c.style.setProperty('--d', (21.6 + (p[0] - 40) / 1420 * 2.2).toFixed(2));
+  c.style.transformOrigin = `${p[0]}px ${Y(p[1])}px`;
+});
+
+/* ---------- stage fit ---------- */
+function fit() {
+  const s = Math.min(innerWidth / 1920, innerHeight / 1080);
+  stage.style.transform = `translate(-50%,-50%) scale(${s})`;
+}
+addEventListener('resize', fit); fit();
+
+/* ---------- master clock ---------- */
+let anims = [], t = 0, playing = false, last = 0;
+const clamp = (x, a = 0, b = 1) => Math.max(a, Math.min(b, x));
+const easeOut = x => 1 - Math.pow(1 - x, 3);
+const prog = (a, b) => easeOut(clamp((t - a) / (b - a)));
+
+function updateDynamic() {
+  $('n1').textContent = '$' + Math.round(prog(0.8, 3.3) * 35) + 'B';
+  const p2 = prog(6.6, 8.6);
+  $('n2').textContent = Math.round(p2 * 14) + '%';
+  $('donutArc').setAttribute('stroke-dasharray', (p2 * 14) + ' 100');
+  $('n3').textContent = Math.round(prog(12.0, 14.0) * 50) + '%';
+}
+function render() {
+  for (const a of anims) a.currentTime = t * 1000;
+  updateDynamic();
+  $('seek').value = t;
+  $('time').textContent = t.toFixed(1) + ' / ' + DURATION.toFixed(1) + 's';
+  $('play').textContent = playing ? '❚❚' : '▶';
+}
+function loop(now) {
+  if (playing) {
+    t += (now - last) / 1000;
+    if (t >= DURATION) { t = DURATION; playing = false; }
+    render();
+  }
+  last = now;
+  requestAnimationFrame(loop);
+}
+function play() { if (t >= DURATION) t = 0; playing = true; last = performance.now(); render(); }
+function pause() { playing = false; render(); }
+
+$('play').onclick = () => playing ? pause() : play();
+$('restart').onclick = () => { t = 0; play(); };
+$('seek').oninput = e => { t = +e.target.value; render(); };
+addEventListener('keydown', e => {
+  if (e.code === 'Space') { e.preventDefault(); playing ? pause() : play(); }
+  if (e.key === 'r' || e.key === 'R') { t = 0; play(); }
+  if (e.key === 'h' || e.key === 'H') $('ui').classList.toggle('hide');
+});
+
+document.fonts.ready.then(() => {
+  anims = document.getAnimations();
+  anims.forEach(a => a.pause());
+  render(); play();
+  requestAnimationFrame(loop);
+});
+</script>
+</body>
+</html>
